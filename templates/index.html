@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>DS Pergola - Sudoku with Handwritten Digits Recognition</title>
+	<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='style.css')}}">
+	<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='sudoku.css')}}">
+</head>
+
+<body>
+		<p class="title centered">
+			DS Pergola - Sudoku with Handwritten Digits Recognition
+		</p>
+		<div id='sudoku' class="centered">
+		</div>
+		<div class="modal">
+			<div class="modal-content" >
+				<div class="modal__header"><p id="modalTitle"></p><a href="#" class="js-close-modal">X</a>
+				</div>
+				<canvas id="my-canvas" class="canvas-style" width="160" height="160"></canvas>
+				<br>
+				<input type="button" class="myButton" id="predictButton" value="Predict">
+				<input type="button" class="myButton" id="clearButton" value="Clear">
+			</div>
+		</div>
+		<div class="centered">
+			<button id="solveButton" class="myButton">Solve!</button>
+		</div>
+		<p id="result" class="centered">
+		</p>
+
+  		<script src="{{url_for('static',filename='jquery-3.2.0.min.js')}}"></script>
+	    <script src="{{url_for('static',filename='index.js')}}"></script>
+	    <script src="{{url_for('static',filename='sudoku.js')}}"></script>
+		<script type="text/javascript">   
+
+			var predictedCellID = null;
+
+			$(".js-open-modal").click(function(event){
+				predictedCellID = event.target.id;
+				resetCanvas();
+
+				var row = returnRow(returnIDfromCellID(predictedCellID))+1;
+				var col = returnCol(returnIDfromCellID(predictedCellID))+1;
+
+				$('#modalTitle').text("CELL ["+row+"x"+col+"]");
+				// document.getElementById("cellLocation").innerText=predictedCellID;
+				$(".modal").addClass("visible");
+			});
+
+			$(".js-open-modal").contextmenu(function(event){
+				event.preventDefault();
+				var cellID = returnIDfromCellID(event.target.id);
+
+				var possible = determinePossibleValues(cellID,sudoku);
+
+				var row = returnRow(cellID)+1;
+				var col = returnCol(cellID)+1;
+
+				$('#result').text("Possible Values ["+row+"x"+col+"]: " + possible);
+			});
+
+			$(".js-close-modal").click(function(){
+				$(".modal").removeClass("visible");
+			});
+
+			$(document).click(function(event) {
+			//if you click on anything except the modal itself or the "open modal" link, close the modal
+				if (!$(event.target).closest(".modal-content,.js-open-modal").length) {
+					$("body").find(".modal").removeClass("visible");
+				}
+			});
+
+
+	   		$("#predictButton").click(function(){
+	   			$('#result').text('  Predicting...');
+				var $SCRIPT_ROOT = {{request.script_root|tojson|safe}};
+				   
+	   			var canvasObj = document.getElementById("my-canvas");
+	   			var img = canvasObj.toDataURL('image/png');
+	   			$.ajax({
+	   				type: "POST",
+	   				url: $SCRIPT_ROOT + "/predict/",
+	   				data: img,
+	   				success: function(data){
+						   var row = returnRow(returnIDfromCellID(predictedCellID))+1;
+						   var col = returnCol(returnIDfromCellID(predictedCellID))+1;
+						   $('#result').text('Last Predicted Output ['+row+'x'+col+']: ' + data);
+						   
+						   updateSudokuCell(predictedCellID,data);
+
+						   $("#"+predictedCellID).addClass("newPredict").delay(1000).queue(function(next){
+								$(this).removeClass("newPredict");
+								next();
+							});
+						   
+						   $(".js-close-modal").click();
+						   
+	   				}
+	   			});
+			});
+
+			   							
+			$("#clearButton").click(function(){
+				resetCanvas();
+			});
+
+			$("#solveButton").click(function(){
+				try {
+					solve(sudoku);
+				} catch (error) {
+					alert("Impossible to solve!")
+				}
+			});
+
+			function resetCanvas(){
+				var canvas = document.getElementById("my-canvas");
+				var context = canvas.getContext("2d");
+				canvas.width = canvas.width;
+
+				context.clearRect( 0, 0, canvas.width, canvas.height );
+				context.fillStyle="white";
+				context.fillRect(0,0,canvas.width,canvas.height);
+				context.lineWidth = 7;
+    			context.lineJoin = context.lineCap = 'round';
+			}
+	   </script>
+</body>
+</html>

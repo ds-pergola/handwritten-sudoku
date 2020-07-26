@@ -1,0 +1,7 @@
+conda install pip
+conda install numpy
+conda install scipy
+conda install flask
+conda install pylint -y
+conda install imageio
+
