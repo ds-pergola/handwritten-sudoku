@@ -1,7 +1,9 @@
-conda install pip
-conda install numpy
-conda install scipy
-conda install flask
-conda install pylint -y
-conda install imageio
+conda create --name mnist
+conda activate mnist
+conda install pip==20.1.1
+conda install numpy==1.18.5
+conda install scipy==1.5.0
+conda install flask==1.1.2
+conda install pylint==2.5.3
+conda install imageio==2.9.0
 
