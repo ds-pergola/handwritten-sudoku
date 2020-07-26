@@ -19,3 +19,5 @@ Each prediction will be stored into a database.
 
 ### 3. Architecture
 ![ScreenShot](architecture.png)
+
+Diagram drawed in [Draw.io](https://github.com/jgraph/drawio-desktop/releases/tag/v13.5.1)
