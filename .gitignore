@@ -1,4 +1,4 @@
-digits/
+digits/*
 __pycache__/
 .vscode/
 .DS_Store
