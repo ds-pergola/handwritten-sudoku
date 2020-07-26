@@ -1,4 +1,4 @@
-# handwritten-sudoku
+# DS Pergola - Sudoku with Handwritten Digit Recognition (Trained with MNIST data)
 
 ### 1. Project Scope
 
