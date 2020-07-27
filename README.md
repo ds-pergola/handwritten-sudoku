@@ -37,7 +37,7 @@ conda activate mnist
 ```
 2. Install packages in [requirements.txt](requirements.txt) into the new environment
 ```
-conda install -c conda-forge packages.txt
+conda install -c conda-forge requirements.txt
 ```
 2. Download the project folder with:  
 ```
