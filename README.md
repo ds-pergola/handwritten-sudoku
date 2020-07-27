@@ -30,6 +30,25 @@ Diagram is drawed in [Draw.io](https://github.com/jgraph/drawio-desktop/releases
 
 ### 4. How to Setup
 
-1. Follow instructions in [packages.txt](packages.txt) to create a new virtual environment and install required packages
-2. Download the project folder with:  "```git clone```"
-3. Run application: "```python app.py```"
+1. Create a new virtual environment
+```
+conda create --name mnist
+conda activate mnist 
+```
+2. Install packages in [requirements.txt](requirements.txt) into the new environment
+```
+conda install -c conda-forge packages.txt
+```
+2. Download the project folder with:  
+```
+git clone https://github.com/ds-pergola/handwritten-sudoku.git
+```
+3. Run application
+```
+python app.py
+```
+4. Visit the URL:
+
+http://0.0.0.0:5000/
+
+http://localhost:5000/

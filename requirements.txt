@@ -1,5 +1,3 @@
-conda create --name mnist
-conda activate mnist
 conda install pip==20.1.1
 conda install numpy==1.18.5
 conda install scipy==1.5.0
