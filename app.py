@@ -33,7 +33,7 @@ def predict():
     parseImage(transaction_id, request.get_data())
 
     # read parsed image back in 8-bit, black and white mode (L)
-    x = imageio.imread('digits/'+transaction_id+'.png', pilmode="L")
+    x = imageio.imread('static/digits/'+transaction_id+'.png', pilmode="L")
     x = np.invert(x)
     x = np.array(Image.fromarray(x).resize(size=(28, 28)))
 
@@ -46,7 +46,7 @@ def predict():
 def parseImage(transaction_id, imgData):
     # parse canvas bytes and save as output.png
     imgstr = re.search(b'base64,(.*)', imgData).group(1)
-    with open('digits/'+transaction_id+'.png','wb') as output:
+    with open('static/digits/'+transaction_id+'.png','wb') as output:
         output.write(base64.decodebytes(imgstr))
 
 if __name__ == '__main__':
