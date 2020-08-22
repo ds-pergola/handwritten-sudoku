@@ -32,8 +32,8 @@ Diagram is drawed in [Draw.io](https://github.com/jgraph/drawio-desktop/releases
 
 1. Create a new virtual environment
 ```
-conda create --name mnist
-conda activate mnist 
+conda create --name sudoku
+conda activate sudoku 
 ```
 2. Install packages in [requirements.txt](requirements.txt) into the new environment
 ```
@@ -49,6 +49,4 @@ python app.py
 ```
 4. Visit the URL:
 
-http://0.0.0.0:5000/
-
-http://localhost:5000/
+http://localhost:8080/
