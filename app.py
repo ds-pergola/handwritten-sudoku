@@ -16,6 +16,10 @@ app = Flask(__name__)
 
 DEBUG = True
 CLOUD_STORAGE_ENABLED = True
+
+#GCP Application Credentials
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "auth/DSPergola_storage-admin.json"
+
     
 @app.route('/')
 def index():
@@ -62,7 +66,7 @@ def saveImage(transaction_id, imgData):
 
 
 def upload_to_gcp(file):
-    client = storage.Client() #.from_service_account_json('auth/DSPergola_storage-admin.json')
+    client = storage.Client() 
     bucket = client.get_bucket("dsp-sudoku")
 
     blob = bucket.blob('predicted/' + file.split('/')[-1])
