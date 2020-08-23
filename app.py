@@ -18,8 +18,7 @@ DEBUG = True
 CLOUD_STORAGE_ENABLED = True
 
 #GCP Application Credentials
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "auth/DSPergola_storage-admin.json"
-
+#os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "auth/DSPergola_storage-admin.json"
     
 @app.route('/')
 def index():
