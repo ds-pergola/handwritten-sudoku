@@ -1,4 +1,5 @@
 __pycache__/
 .vscode/
 .DS_Store
+auth/DSPergola_storage-admin.json
 
