@@ -1,8 +1,6 @@
 from flask import Flask, render_template, request
 import imageio
 from PIL import Image 
-import numpy as np
-import uuid
 import random
 from google.cloud import storage
 import re
@@ -10,7 +8,8 @@ import base64
 import sys 
 import os
 import time
-sys.path.append(os.path.abspath("./model"))
+from multiprocessing import Process
+import requests
 
 app = Flask(__name__)
 
@@ -18,53 +17,60 @@ DEBUG = True
 CLOUD_STORAGE_ENABLED = True
 
 #GCP Application Credentials
-#os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "auth/DSPergola_storage-admin.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "auth/storage-admin.json"
+
+#Prediction REST API URL
+PREDICT_REST_API_URL = os.environ["PREDICT_REST_API_URL"]
     
 @app.route('/')
 def index():
-    print("Index initialized.")
+    print("Index page rendering...")
     return render_template("index.html") 
 
 @app.route('/predict/', methods=['GET','POST'])
 def predict():
-    # transaction_id = str(uuid.uuid4())
     transaction_id = str(int(time.time()*1000000))
     if DEBUG: print(f'transaction_id={transaction_id}')
 
-    localImagePath = saveImage(transaction_id, request.get_data())
+    filename = transaction_id + '.png'
+    folder = 'static/digits/'
+    localImagePath = folder + filename
+
+    save_image(localImagePath, request.get_data())
     if DEBUG: print(f'localImagePath={localImagePath}')
 
-    # read parsed image back in 8-bit, black and white mode (L)
-    x = imageio.imread(localImagePath, pilmode="L")
-    x = np.invert(x)
-    x = np.array(Image.fromarray(x).resize(size=(28, 28)))
+    image = open(localImagePath, "rb").read()
+    file_payload = {"image": image}
+    parameter_payload = {"transaction_id": transaction_id}
 
-    out = random.randint(1, 9)
+    response = requests.post(PREDICT_REST_API_URL, files=file_payload, data=parameter_payload)
+    response = response.json()
+    if DEBUG: print(response)
 
-    # response = np.array_str(np.argmax(out, axis=1))
+    if response["success"]:
+        out = response["predicted_digit"]
+    else:
+        out = -1
+
     response = str(out)
 
-    if CLOUD_STORAGE_ENABLED:   # Remove local file
-        os.remove(localImagePath)
-
+    if CLOUD_STORAGE_ENABLED:   
+        async_process = Process(  # Create a daemonic async process
+            target=upload_to_gcp,
+            args=(localImagePath, ),
+            daemon=True
+        )
+        async_process.start()
+        
     return response 
     
-def saveImage(transaction_id, imgData):
+def save_image(localImagePath, imgData):
     imgstr = re.search(b'base64,(.*)', imgData).group(1)
-    folder = 'static/digits/' 
-    filename = transaction_id + '.png'
-    localImagePath = folder + filename
 
     with open(localImagePath,'wb') as output:
         output.write(base64.decodebytes(imgstr))
 
-    if CLOUD_STORAGE_ENABLED:
-        upload_to_gcp(localImagePath)
-    
-    return localImagePath
-
-
-def upload_to_gcp(file):
+def upload_to_gcp(file, remove_after_upload=True):
     client = storage.Client() 
     bucket = client.get_bucket("dsp-sudoku")
 
@@ -75,10 +81,20 @@ def upload_to_gcp(file):
     url = blob.public_url
     if DEBUG: print(f"Cloud Public Image URL={url}")
 
+    if remove_after_upload:
+        os.remove(file)
 
+    return url
+    
+if DEBUG: print("DEBUG Enabled")
+if CLOUD_STORAGE_ENABLED: print("CLOUD_STORAGE_ENABLED Enabled")
+
+#Used while testing locally with flask
 if __name__ == '__main__':
-    if DEBUG: print("DEBUG Enabled")
-    if CLOUD_STORAGE_ENABLED: print("CLOUD_STORAGE_ENABLED Enabled")
-
+    os.environ['PREDICT_REST_API_URL'] = "http://localhost:5000/predict"
     app.run(debug=True, host='0.0.0.0', port=8080)
-    #app.run(debug=True)
+
+#Used while running on Docker with gunicorn
+if __name__ == "app" :
+    print("Initializing the service.")
+
