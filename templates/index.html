@@ -83,11 +83,16 @@
 	   				url: $SCRIPT_ROOT + "/predict/",
 	   				data: img,
 	   				success: function(data){
+						   var digit = data["digit"];
+						   var prob = data["prob"];
+						   var transaction_id = data["transaction_id"];
+							
 						   var row = returnRow(returnIDfromCellID(predictedCellID))+1;
 						   var col = returnCol(returnIDfromCellID(predictedCellID))+1;
-						   $('#result').text('Last Predicted Output ['+row+'x'+col+']: ' + data);
+
+						   $('#result').text('LOG ['+row+'x'+col+']: ' + JSON.stringify(data));
 						   
-						   updateSudokuCell(predictedCellID,data);
+						   updateSudokuCell(predictedCellID, digit);
 
 						   $("#"+predictedCellID).addClass("newPredict").delay(1000).queue(function(next){
 								$(this).removeClass("newPredict");

@@ -8,8 +8,11 @@ import base64
 import sys 
 import os
 import time
-from multiprocessing import Process
+import multiprocessing 
 import requests
+import pymongo
+from datetime import datetime
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 
@@ -20,7 +23,10 @@ CLOUD_STORAGE_ENABLED = True
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "auth/storage-admin.json"
 
 #Prediction REST API URL
-PREDICT_REST_API_URL = os.environ["PREDICT_REST_API_URL"]
+PREDICT_REST_API_URL = os.getenv("PREDICT_REST_API_URL")
+
+#MongoDB Adapter
+mongo_db = None
     
 @app.route('/')
 def index():
@@ -48,21 +54,24 @@ def predict():
     if DEBUG: print(response)
 
     if response["success"]:
-        out = response["predicted_digit"]
+        out = {"digit": response["predicted_digit"],
+                "prob": response["predicted_prob"],
+                "transaction_id": response["transaction_id"]}
     else:
         out = -1
-
-    response = str(out)
+    
+    save_prediction_db(response["transaction_id"], response["model_version"], response["predicted_digit"], response["predicted_prob"])
 
     if CLOUD_STORAGE_ENABLED:   
-        async_process = Process(  # Create a daemonic async process
+        async_upload = multiprocessing.Process(  # Create a daemonic async process
             target=upload_to_gcp,
             args=(localImagePath, ),
             daemon=True
         )
-        async_process.start()
-        
-    return response 
+        async_upload.start()
+    
+
+    return out 
     
 def save_image(localImagePath, imgData):
     imgstr = re.search(b'base64,(.*)', imgData).group(1)
@@ -85,16 +94,35 @@ def upload_to_gcp(file, remove_after_upload=True):
         os.remove(file)
 
     return url
-    
-if DEBUG: print("DEBUG Enabled")
-if CLOUD_STORAGE_ENABLED: print("CLOUD_STORAGE_ENABLED Enabled")
+
+def save_prediction_db(transaction_id, model_version, digit, probability, public_url=None):
+    doc = {"transaction_id": transaction_id,
+            "model_version": model_version,
+            "digit" : digit,
+            "probability": probability,
+            "datetime": datetime.utcnow()}
+    oid = mongo_db.predictions.insert_one(doc)
+    return oid
+
+def init():
+    if DEBUG: print("DEBUG Enabled")
+    if CLOUD_STORAGE_ENABLED: print("CLOUD_STORAGE_ENABLED Enabled")
+
+    load_dotenv(verbose=True, override=True)
+
+    mongo_client = pymongo.MongoClient(os.getenv('MONGO_URI'))
+    global mongo_db
+    mongo_db = mongo_client.sudoku
+
 
 #Used while testing locally with flask
 if __name__ == '__main__':
+    init()
     os.environ['PREDICT_REST_API_URL'] = "http://localhost:5000/predict"
     app.run(debug=True, host='0.0.0.0', port=8080)
 
 #Used while running on Docker with gunicorn
 if __name__ == "app" :
+    init()
     print("Initializing the service.")
 
