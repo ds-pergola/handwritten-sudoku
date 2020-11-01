@@ -77,6 +77,7 @@ def save_image(localImagePath, imgData):
         output.write(base64.decodebytes(imgstr))
 
 def upload_to_gcp(file, transaction_id, remove_after_upload=True):
+    if DEBUG: print(f"Started Uploading image to GCP Storage: {transaction_id}")
     client = storage.Client() 
     bucket = client.get_bucket("dsp-sudoku")
 
@@ -85,11 +86,12 @@ def upload_to_gcp(file, transaction_id, remove_after_upload=True):
     blob.make_public()
 
     url = blob.public_url
-    if DEBUG: print(f"Cloud Public Image URL={url}")
+    if DEBUG: print(f"Uploaded Cloud Public Image URL={url}")
 
     if remove_after_upload:
         os.remove(file)
     
+    db.refresh_client()
     db.predictions_update_public_url(transaction_id, url)
 
     return url

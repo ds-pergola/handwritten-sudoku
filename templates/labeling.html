@@ -6,15 +6,8 @@
 	<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='style.css')}}">
 	<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='sudoku.css')}}">
 	<style>
-
-table
-{
-	border: 0px;
-}
-table td
-{
-   border-width: 0px;
-}
+		table{ border: 0px; }
+		table td{ border-width: 0px; }
 	</style>
 </head>
 
@@ -59,109 +52,13 @@ table td
 		{% if message %}
 		<div class="centered">
 			<p>{{ message }}</p>
+			<script>
+				setTimeout(function(){
+				window.location.reload(1);
+				}, 2000);
+			</script>
 		</div>
 		{% endif %}
 
-  		<script src="{{url_for('static',filename='jquery-3.2.0.min.js')}}"></script>
-	    <script src="{{url_for('static',filename='index.js')}}"></script>
-	    <script src="{{url_for('static',filename='sudoku.js')}}"></script>
-		<script type="text/javascript">   
-
-			var predictedCellID = null;
-
-			$(".js-open-modal").click(function(event){
-				predictedCellID = event.target.id;
-				resetCanvas();
-
-				var row = returnRow(returnIDfromCellID(predictedCellID))+1;
-				var col = returnCol(returnIDfromCellID(predictedCellID))+1;
-
-				$('#modalTitle').text("CELL ["+row+"x"+col+"]");
-				// document.getElementById("cellLocation").innerText=predictedCellID;
-				$(".modal").addClass("visible");
-			});
-
-			$(".js-open-modal").contextmenu(function(event){
-				event.preventDefault();
-				var cellID = returnIDfromCellID(event.target.id);
-
-				var possible = determinePossibleValues(cellID,sudoku);
-
-				var row = returnRow(cellID)+1;
-				var col = returnCol(cellID)+1;
-
-				$('#result').text("Possible Values ["+row+"x"+col+"]: " + possible);
-			});
-
-			$(".js-close-modal").click(function(){
-				$(".modal").removeClass("visible");
-			});
-
-			$(document).click(function(event) {
-			//if you click on anything except the modal itself or the "open modal" link, close the modal
-				if (!$(event.target).closest(".modal-content,.js-open-modal").length) {
-					$("body").find(".modal").removeClass("visible");
-				}
-			});
-
-
-	   		$("#predictButton").click(function(){
-	   			$('#result').text('  Predicting...');
-				var $SCRIPT_ROOT = {{request.script_root|tojson|safe}};
-				   
-	   			var canvasObj = document.getElementById("my-canvas");
-	   			var img = canvasObj.toDataURL('image/png');
-	   			$.ajax({
-	   				type: "POST",
-	   				url: $SCRIPT_ROOT + "/predict/",
-	   				data: img,
-	   				success: function(data){
-						   var digit = data["digit"];
-						   var prob = data["prob"];
-						   var transaction_id = data["transaction_id"];
-							
-						   var row = returnRow(returnIDfromCellID(predictedCellID))+1;
-						   var col = returnCol(returnIDfromCellID(predictedCellID))+1;
-
-						   $('#result').text('LOG ['+row+'x'+col+']: ' + JSON.stringify(data));
-						   
-						   updateSudokuCell(predictedCellID, digit);
-
-						   $("#"+predictedCellID).addClass("newPredict").delay(1000).queue(function(next){
-								$(this).removeClass("newPredict");
-								next();
-							});
-						   
-						   $(".js-close-modal").click();
-						   
-	   				}
-	   			});
-			});
-
-			   							
-			$("#clearButton").click(function(){
-				resetCanvas();
-			});
-
-			$("#solveButton").click(function(){
-				try {
-					solve(sudoku);
-				} catch (error) {
-					alert("Impossible to solve!")
-				}
-			});
-
-			function resetCanvas(){
-				var canvas = document.getElementById("my-canvas");
-				var context = canvas.getContext("2d");
-				canvas.width = canvas.width;
-
-				context.clearRect( 0, 0, canvas.width, canvas.height );
-				context.fillStyle="white";
-				context.fillRect(0,0,canvas.width,canvas.height);
-				context.lineWidth = 7;
-    			context.lineJoin = context.lineCap = 'round';
-			}
-	   </script>
 </body>
 </html>

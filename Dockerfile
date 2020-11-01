@@ -19,7 +19,7 @@ RUN pip install gunicorn
 
 # This default value facilitates local development.
 ENV PORT 8080
-ENV PREDICT_REST_API_URL "https://handwritten-sudoku-ocahlgdqhq-uc.a.run.app/predict"
+ENV PREDICT_REST_API_URL "https://handwritten-prediction-model-ocahlgdqhq-uc.a.run.app/predict"
 
 # Run the web service on container startup. Here we use the gunicorn
 # webserver, with one worker process and 8 threads.

@@ -8,8 +8,14 @@ load_dotenv(verbose=True, override=True)
 
 try: 
     db = MongoClient(os.environ["MONGO_URI"])["sudoku"]
+    print("MONGODB CONNECTION IS SUCCESSFUL!")
 except KeyError:
     raise Exception("You haven't configured your MONGO_URI!")
+
+def refresh_client():
+    global db
+    db = MongoClient(os.environ["MONGO_URI"])["sudoku"]
+    print("refresh_client()")
 
 def predictions_insert(transaction_id, model_version, digit, probability, \
     public_url=None, label=None, label_user=None, label_dttm=None):
@@ -36,8 +42,18 @@ def predictions_update_label(transaction_id, label):
 
 def predictions_get_random_unlabeled():
     aggr = list(db.predictions.aggregate([
-        { "$match": { "label": None } },
-        { "$sample": { "size": 1 } }]))
+        { 
+            "$match": { 
+                "label": None ,
+                "public_url": { "$ne": None }
+            }
+        },
+        { 
+            "$sample": { 
+                "size": 1 
+            } 
+        }
+        ]))
     if len(aggr) > 0:
         return aggr[0]
     else:
