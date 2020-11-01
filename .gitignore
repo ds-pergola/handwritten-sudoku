@@ -1,5 +1,6 @@
 __pycache__/
 .vscode/
 .DS_Store
+.env
 auth/DSPergola_storage-admin.json
-
+_test.py

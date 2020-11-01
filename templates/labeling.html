@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>DS Pergola - Sudoku with Handwritten Digits Recognition</title>
+	<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='style.css')}}">
+	<link rel="stylesheet" type="text/css" href="{{url_for('static', filename='sudoku.css')}}">
+	<style>
+
+table
+{
+	border: 0px;
+}
+table td
+{
+   border-width: 0px;
+}
+	</style>
+</head>
+
+<body>
+		<p class="title centered">
+			Labeling Earlier Predictions
+		</p>
+		
+		{% if prediction %}
+		<div class="centered">
+			<table style="width:50%;">
+				<tr>
+					<td>
+						<img src="{{ prediction['public_url'] }}">
+						<br>
+						<p>{{ prediction["transaction_id"] }}</p>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2">
+						<form action="{{ url_for('update_label', transaction_id=prediction['transaction_id'] ) }}" method=post>
+							<button type="submit" value="1" name="label" class="labelButton myButton">1</button>
+							<button type="submit" value="2" name="label" class="labelButton myButton">2</button>
+							<button type="submit" value="3" name="label" class="labelButton myButton">3</button>
+							<br>
+							<button type="submit" value="4" name="label" class="labelButton myButton">4</button>
+							<button type="submit" value="5" name="label" class="labelButton myButton">5</button>
+							<button type="submit" value="6" name="label" class="labelButton myButton">6</button>
+							<br>
+							<button type="submit" value="7" name="label" class="labelButton myButton">7</button>
+							<button type="submit" value="8" name="label" class="labelButton myButton">8</button>
+							<button type="submit" value="9" name="label" class="labelButton myButton">9</button>
+							<br>
+						</form>
+					</td>
+				</tr>
+
+			</table>
+		</div>
+		{% endif %}
+
+		{% if message %}
+		<div class="centered">
+			<p>{{ message }}</p>
+		</div>
+		{% endif %}
+
+  		<script src="{{url_for('static',filename='jquery-3.2.0.min.js')}}"></script>
+	    <script src="{{url_for('static',filename='index.js')}}"></script>
+	    <script src="{{url_for('static',filename='sudoku.js')}}"></script>
+		<script type="text/javascript">   
+
+			var predictedCellID = null;
+
+			$(".js-open-modal").click(function(event){
+				predictedCellID = event.target.id;
+				resetCanvas();
+
+				var row = returnRow(returnIDfromCellID(predictedCellID))+1;
+				var col = returnCol(returnIDfromCellID(predictedCellID))+1;
+
+				$('#modalTitle').text("CELL ["+row+"x"+col+"]");
+				// document.getElementById("cellLocation").innerText=predictedCellID;
+				$(".modal").addClass("visible");
+			});
+
+			$(".js-open-modal").contextmenu(function(event){
+				event.preventDefault();
+				var cellID = returnIDfromCellID(event.target.id);
+
+				var possible = determinePossibleValues(cellID,sudoku);
+
+				var row = returnRow(cellID)+1;
+				var col = returnCol(cellID)+1;
+
+				$('#result').text("Possible Values ["+row+"x"+col+"]: " + possible);
+			});
+
+			$(".js-close-modal").click(function(){
+				$(".modal").removeClass("visible");
+			});
+
+			$(document).click(function(event) {
+			//if you click on anything except the modal itself or the "open modal" link, close the modal
+				if (!$(event.target).closest(".modal-content,.js-open-modal").length) {
+					$("body").find(".modal").removeClass("visible");
+				}
+			});
+
+
+	   		$("#predictButton").click(function(){
+	   			$('#result').text('  Predicting...');
+				var $SCRIPT_ROOT = {{request.script_root|tojson|safe}};
+				   
+	   			var canvasObj = document.getElementById("my-canvas");
+	   			var img = canvasObj.toDataURL('image/png');
+	   			$.ajax({
+	   				type: "POST",
+	   				url: $SCRIPT_ROOT + "/predict/",
+	   				data: img,
+	   				success: function(data){
+						   var digit = data["digit"];
+						   var prob = data["prob"];
+						   var transaction_id = data["transaction_id"];
+							
+						   var row = returnRow(returnIDfromCellID(predictedCellID))+1;
+						   var col = returnCol(returnIDfromCellID(predictedCellID))+1;
+
+						   $('#result').text('LOG ['+row+'x'+col+']: ' + JSON.stringify(data));
+						   
+						   updateSudokuCell(predictedCellID, digit);
+
+						   $("#"+predictedCellID).addClass("newPredict").delay(1000).queue(function(next){
+								$(this).removeClass("newPredict");
+								next();
+							});
+						   
+						   $(".js-close-modal").click();
+						   
+	   				}
+	   			});
+			});
+
+			   							
+			$("#clearButton").click(function(){
+				resetCanvas();
+			});
+
+			$("#solveButton").click(function(){
+				try {
+					solve(sudoku);
+				} catch (error) {
+					alert("Impossible to solve!")
+				}
+			});
+
+			function resetCanvas(){
+				var canvas = document.getElementById("my-canvas");
+				var context = canvas.getContext("2d");
+				canvas.width = canvas.width;
+
+				context.clearRect( 0, 0, canvas.width, canvas.height );
+				context.fillStyle="white";
+				context.fillRect(0,0,canvas.width,canvas.height);
+				context.lineWidth = 7;
+    			context.lineJoin = context.lineCap = 'round';
+			}
+	   </script>
+</body>
+</html>

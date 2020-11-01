@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 import imageio
 from PIL import Image 
 import random
@@ -12,7 +12,7 @@ import multiprocessing
 import requests
 import pymongo
 from datetime import datetime
-from dotenv import load_dotenv
+import db as db
 
 app = Flask(__name__)
 
@@ -25,9 +25,6 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "auth/storage-admin.json"
 #Prediction REST API URL
 PREDICT_REST_API_URL = os.getenv("PREDICT_REST_API_URL")
 
-#MongoDB Adapter
-mongo_db = None
-    
 @app.route('/')
 def index():
     print("Index page rendering...")
@@ -60,12 +57,12 @@ def predict():
     else:
         out = -1
     
-    save_prediction_db(response["transaction_id"], response["model_version"], response["predicted_digit"], response["predicted_prob"])
+    db.predictions_insert(response["transaction_id"], response["model_version"], response["predicted_digit"], response["predicted_prob"])
 
     if CLOUD_STORAGE_ENABLED:   
         async_upload = multiprocessing.Process(  # Create a daemonic async process
             target=upload_to_gcp,
-            args=(localImagePath, ),
+            args=(localImagePath,transaction_id, ),
             daemon=True
         )
         async_upload.start()
@@ -79,7 +76,7 @@ def save_image(localImagePath, imgData):
     with open(localImagePath,'wb') as output:
         output.write(base64.decodebytes(imgstr))
 
-def upload_to_gcp(file, remove_after_upload=True):
+def upload_to_gcp(file, transaction_id, remove_after_upload=True):
     client = storage.Client() 
     bucket = client.get_bucket("dsp-sudoku")
 
@@ -92,27 +89,36 @@ def upload_to_gcp(file, remove_after_upload=True):
 
     if remove_after_upload:
         os.remove(file)
+    
+    db.predictions_update_public_url(transaction_id, url)
 
     return url
 
-def save_prediction_db(transaction_id, model_version, digit, probability, public_url=None):
-    doc = {"transaction_id": transaction_id,
-            "model_version": model_version,
-            "digit" : digit,
-            "probability": probability,
-            "datetime": datetime.utcnow()}
-    oid = mongo_db.predictions.insert_one(doc)
-    return oid
+@app.route('/labeling/', methods=['GET'])
+@app.route('/labeling/<transaction_id>', methods=['GET'])
+def load_unlabeled(transaction_id=None):
+    if request.method == 'GET':
+        if transaction_id:
+            doc = db.predictions_get(transaction_id)
+            return render_template("labeling.html", prediction=doc) 
+        else:
+            doc = db.predictions_get_random_unlabeled()
+            if doc:
+                transaction_id = doc.get("transaction_id")
+                return redirect(str(transaction_id))
+            else:
+                return render_template("labeling.html", message="No unlabeled data found.") 
+
+
+@app.route('/labeling/<transaction_id>/labeled/', methods=['POST'])
+def update_label(transaction_id):
+    label = int(request.form["label"])
+    db.predictions_update_label(transaction_id, label)
+    return redirect(url_for('load_unlabeled'))
 
 def init():
     if DEBUG: print("DEBUG Enabled")
     if CLOUD_STORAGE_ENABLED: print("CLOUD_STORAGE_ENABLED Enabled")
-
-    load_dotenv(verbose=True, override=True)
-
-    mongo_client = pymongo.MongoClient(os.getenv('MONGO_URI'))
-    global mongo_db
-    mongo_db = mongo_client.sudoku
 
 
 #Used while testing locally with flask

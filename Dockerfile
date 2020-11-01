@@ -25,4 +25,4 @@ ENV PREDICT_REST_API_URL "https://handwritten-sudoku-ocahlgdqhq-uc.a.run.app/pre
 # webserver, with one worker process and 8 threads.
 # For environments with multiple CPU cores, increase the number of workers
 # to be equal to the cores available.
-CMD exec gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 0 app:app
+CMD exec gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 0 main:app
